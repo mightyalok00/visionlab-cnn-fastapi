@@ -24,12 +24,16 @@ class ExplainResponse(BaseModel):
 
 class BatchItemPrediction(BaseModel):
     filename: str
-    predicted_class: str
-    confidence: float = Field(ge=0.0, le=1.0)
-    top_predictions: list[TopPrediction]
+    status: str = Field(default="success", description="Processing status: 'success' or 'error'")
+    predicted_class: str | None = None
+    confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    top_predictions: list[TopPrediction] | None = None
     inverted_background: bool = False
+    error: str | None = None
 
 
 class BatchPredictionResponse(BaseModel):
-    total_processed: int
+    total_images: int
+    successful: int
+    failed: int
     predictions: list[BatchItemPrediction]

@@ -21,3 +21,26 @@ jobs:
         run: pip check
       - name: Run tests
         run: pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t visionlab:test .
+      - name: Verify Docker startup and readiness probe
+        run: |
+          docker run -d -p 8000:8000 --name visionlab visionlab:test
+          for i in {1..15}; do
+            if curl -s -f http://localhost:8000/ready; then
+              echo "Container is ready and serving model!"
+              docker stop visionlab
+              exit 0
+            fi
+            echo "Waiting for container readiness..."
+            sleep 2
+          done
+          echo "ERROR: Container failed readiness check"
+          docker logs visionlab
+          exit 1

@@ -1,0 +1,98 @@
+{
+  "calibration": {
+    "expected_calibration_error": 0.0196,
+    "maximum_calibration_error": 0.2615,
+    "brier_score": 0.1199,
+    "mean_confidence": 0.9348,
+    "overall_accuracy": 0.9152,
+    "bin_counts": [
+      0,
+      0,
+      3,
+      32,
+      113,
+      384,
+      374,
+      424,
+      613,
+      8057
+    ],
+    "bin_accuracies": [
+      0.0,
+      0.0,
+      0.0,
+      0.375,
+      0.3009,
+      0.5104,
+      0.5749,
+      0.6887,
+      0.801,
+      0.982
+    ],
+    "bin_confidences": [
+      0.05,
+      0.15,
+      0.2615,
+      0.3653,
+      0.4579,
+      0.5482,
+      0.6505,
+      0.7535,
+      0.8526,
+      0.9914
+    ]
+  },
+  "background_inversion_analysis": {
+    "benchmark_dark_bg_accuracy": 0.9152,
+    "white_bg_with_auto_invert_accuracy": 0.9152,
+    "white_bg_auto_inversion_detection_rate": 0.9998,
+    "false_inversion_risk_on_dark_bg": 0.0002,
+    "class_vulnerability_profile": {
+      "T-shirt/top": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.828
+      },
+      "Trouser": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.985
+      },
+      "Pullover": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.825
+      },
+      "Dress": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.924
+      },
+      "Coat": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.913
+      },
+      "Sandal": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.988
+      },
+      "Shirt": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.767
+      },
+      "Sneaker": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.981
+      },
+      "Bag": {
+        "false_inversion_rate_on_dark_bg": 0.002,
+        "original_accuracy": 0.985
+      },
+      "Ankle boot": {
+        "false_inversion_rate_on_dark_bg": 0.0,
+        "original_accuracy": 0.956
+      }
+    },
+    "critical_guidelines": [
+      "Auto-inversion relies on the assumption that background dominates the outer 2-pixel perimeter.",
+      "Items that touch all image borders (e.g. wide oversized coats or pullovers cropped closely) can falsely trigger inversion.",
+      "Users should be provided with an explicit toggle to disable auto-inversion when uploading pre-segmented dark garments."
+    ]
+  }
+}

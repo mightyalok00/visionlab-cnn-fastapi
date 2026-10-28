@@ -1,0 +1,62 @@
+{
+  "environment": {
+    "os": "Windows 10 (AMD64)",
+    "python_version": "3.11.15",
+    "tensorflow_version": "2.15.1",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel"
+  },
+  "single_image_inference": {
+    "runs": 200,
+    "mean_ms": 57.534,
+    "std_ms": 19.081,
+    "median_ms": 53.082,
+    "p90_ms": 80.484,
+    "p95_ms": 91.655,
+    "p99_ms": 126.473,
+    "min_ms": 35.409,
+    "max_ms": 135.769,
+    "throughput_fps": 17.38
+  },
+  "batch_inference": {
+    "batch_1": {
+      "batch_size": 1,
+      "mean_batch_latency_ms": 54.309,
+      "median_batch_latency_ms": 48.755,
+      "p95_batch_latency_ms": 86.179,
+      "per_image_latency_ms": 54.309,
+      "throughput_img_per_sec": 18.41
+    },
+    "batch_4": {
+      "batch_size": 4,
+      "mean_batch_latency_ms": 56.371,
+      "median_batch_latency_ms": 50.772,
+      "p95_batch_latency_ms": 95.558,
+      "per_image_latency_ms": 14.093,
+      "throughput_img_per_sec": 70.96
+    },
+    "batch_8": {
+      "batch_size": 8,
+      "mean_batch_latency_ms": 53.782,
+      "median_batch_latency_ms": 50.209,
+      "p95_batch_latency_ms": 80.148,
+      "per_image_latency_ms": 6.723,
+      "throughput_img_per_sec": 148.75
+    },
+    "batch_16": {
+      "batch_size": 16,
+      "mean_batch_latency_ms": 58.009,
+      "median_batch_latency_ms": 57.388,
+      "p95_batch_latency_ms": 81.367,
+      "per_image_latency_ms": 3.626,
+      "throughput_img_per_sec": 275.82
+    }
+  },
+  "api_end_to_end": {
+    "requests": 100,
+    "mean_ms": 68.13,
+    "median_ms": 67.839,
+    "p95_ms": 101.965,
+    "p99_ms": 112.884,
+    "throughput_req_per_sec": 14.68
+  }
+}

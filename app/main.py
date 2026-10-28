@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from PIL import UnidentifiedImageError
@@ -16,6 +17,7 @@ from app.model import (
     generate_gradcam_overlay,
     load_keras_model,
     predict_array,
+    preprocess_array,
     process_raw_image,
 )
 from app.schemas import (
@@ -23,6 +25,7 @@ from app.schemas import (
     BatchPredictionResponse,
     ExplainResponse,
     PredictionResponse,
+    TopPrediction,
 )
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -32,6 +35,8 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 MODEL_PATH = Path(os.getenv("VISIONLAB_MODEL_PATH", str(BASE_DIR / "artifacts" / "best_model.keras")))
 TEMPLATE_PATH = Path(__file__).resolve().parent / "templates" / "index.html"
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+MAX_BATCH_FILES = 16
+MAX_BATCH_TOTAL_BYTES = 20 * 1024 * 1024
 ALLOWED_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 
@@ -201,37 +206,106 @@ async def predict_batch(
     files: list[UploadFile] = File(...),
     auto_invert: bool = Query(True, description="Automatically invert light backgrounds"),
 ):
-    """Vectorized batch prediction endpoint for up to 16 images."""
+    """Vectorized batch prediction endpoint with per-file validation and batch payload limits."""
     if request.app.state.model is None:
         raise HTTPException(status_code=503, detail="Model unavailable. Train a model first.")
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded.")
-    if len(files) > 16:
-        raise HTTPException(status_code=400, detail="Maximum batch size is 16 images.")
+    if len(files) > MAX_BATCH_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Maximum batch size is {MAX_BATCH_FILES} images; received {len(files)}.",
+        )
 
+    total_batch_bytes = 0
     results: list[BatchItemPrediction] = []
-    for f in files:
-        if f.content_type not in ALLOWED_CONTENT_TYPES:
-            continue
+    valid_items: list[tuple[int, np.ndarray, bool]] = []  # (result_index, pixels, was_inverted)
+
+    for idx, f in enumerate(files):
+        filename = f.filename or f"image_{idx + 1}.png"
         try:
-            payload = await f.read(MAX_UPLOAD_BYTES)
-            if not payload:
+            if f.content_type not in ALLOWED_CONTENT_TYPES:
+                results.append(
+                    BatchItemPrediction(
+                        filename=filename,
+                        status="error",
+                        error=f"Unsupported content type '{f.content_type}'. Expected image/png, image/jpeg, or image/webp.",
+                    )
+                )
                 continue
+
+            payload = await f.read(MAX_UPLOAD_BYTES + 1)
+            total_batch_bytes += len(payload)
+            if total_batch_bytes > MAX_BATCH_TOTAL_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"Total batch payload exceeds the {MAX_BATCH_TOTAL_BYTES // (1024 * 1024)} MB limit.",
+                )
+
+            if not payload:
+                results.append(
+                    BatchItemPrediction(
+                        filename=filename,
+                        status="error",
+                        error="Uploaded file is empty.",
+                    )
+                )
+                continue
+
+            if len(payload) > MAX_UPLOAD_BYTES:
+                results.append(
+                    BatchItemPrediction(
+                        filename=filename,
+                        status="error",
+                        error=f"File exceeds the individual {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.",
+                    )
+                )
+                continue
+
             pixels, was_inverted = process_raw_image(payload, auto_invert=auto_invert)
-            pred = predict_array(request.app.state.model, pixels, was_inverted=was_inverted)
+            valid_items.append((idx, pixels, was_inverted))
             results.append(
                 BatchItemPrediction(
-                    filename=f.filename or "upload.png",
-                    predicted_class=pred["predicted_class"],
-                    confidence=pred["confidence"],
-                    top_predictions=pred["top_predictions"],
+                    filename=filename,
+                    status="success",
                     inverted_background=was_inverted,
                 )
             )
-        except Exception:
-            continue
+        except HTTPException:
+            raise
+        except (UnidentifiedImageError, OSError, ValueError) as exc:
+            results.append(
+                BatchItemPrediction(
+                    filename=filename,
+                    status="error",
+                    error=f"Invalid or unreadable image: {type(exc).__name__}",
+                )
+            )
         finally:
             await f.close()
 
-    return BatchPredictionResponse(total_processed=len(results), predictions=results)
+    # Vectorized inference across all valid images in the batch
+    if valid_items:
+        batch_arrays = np.stack([preprocess_array(item[1]) for item in valid_items], axis=0)
+        all_probabilities = request.app.state.model.predict(batch_arrays, verbose=0)
+
+        for (item_idx, _, was_inverted), probs in zip(valid_items, all_probabilities):
+            top_indices = np.argsort(probs)[::-1][:3]
+            top_preds = [
+                TopPrediction(class_name=CLASS_NAMES[int(i)], probability=float(probs[i]))
+                for i in top_indices
+            ]
+            results[item_idx].predicted_class = CLASS_NAMES[int(top_indices[0])]
+            results[item_idx].confidence = float(probs[top_indices[0]])
+            results[item_idx].top_predictions = top_preds
+
+    successful = sum(1 for r in results if r.status == "success")
+    failed = len(results) - successful
+
+    return BatchPredictionResponse(
+        total_images=len(files),
+        successful=successful,
+        failed=failed,
+        predictions=results,
+    )
 

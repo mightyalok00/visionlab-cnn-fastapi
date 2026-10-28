@@ -2,10 +2,11 @@
 
 A reproducible deep-learning portfolio project that trains convolutional neural networks **from random initialization** on Fashion-MNIST and serves predictions through FastAPI with an interactive web playground.
 
+[![CI](https://github.com/mightyalok00/visionlab-cnn-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/mightyalok00/visionlab-cnn-fastapi/actions/workflows/ci.yml)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![TensorFlow 2.15](https://img.shields.io/badge/TensorFlow-2.15-FF6F00?logo=tensorflow&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
-![Pytest](https://img.shields.io/badge/Tests-17%20Passed-449C45?logo=pytest&logoColor=white)
+![Pytest](https://img.shields.io/badge/Tests-19%20Passed-449C45?logo=pytest&logoColor=white)
 ![Test Accuracy](https://img.shields.io/badge/Test%20Accuracy-91.52%25-blue)
 
 ---
@@ -36,37 +37,66 @@ Trained under fixed random seed (`seed=42`) with 54,000 training, 6,000 validati
 
 ---
 
-## Features
+## Performance Benchmarks
 
-- **Scratch CNNs**: 3 architectures trained from random weights (`baseline`, `balanced`, `regularized`) — no pretrained shortcuts.
-- **Leak-Free ML Lifecycle**: Fixed split, early stopping, LR reduction, and validation-only selection.
-- **Production Preprocessing Engine**:
-  - **Alpha-channel safety**: Automatic compositing of transparent PNGs over a white canvas.
-  - **Auto-inversion**: Dynamically detects light backgrounds and inverts them to match the Fashion-MNIST dark background distribution.
-  - **Strict validation**: Rejects empty payloads, non-numeric arrays, NaNs, and files $> 5$ MB.
-- **FastAPI Service**:
-  - `POST /predict`: Top-3 classes, confidence, and full probability breakdown.
-  - `GET /health` & `GET /ready`: Container liveness/readiness probes (returns HTTP 503 if model is missing).
-  - `GET /model-info`: Live metadata and parameter counts.
-  - `GET /demo`: Dark-mode interactive web dashboard with drawing canvas and live image inspector.
-- **Test Suite**: 14 unit and contract tests via `pytest`.
-- **Docker Support**: Containerized deployment with multi-stage Dockerfile and docker-compose.
+Measured on CPU under documented conditions (`Python 3.11`, `TensorFlow 2.15.1`, `x86_64 CPU`, 20 warmup iterations). Results recorded in [`reports/benchmark_summary.json`](reports/benchmark_summary.json):
+
+### Inference Latency & Scalability
+
+| Workload | Batch Size | Median (p50) | 95th Percentile (p95) | Per-Image Latency | Throughput |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Single Image (Raw)** | 1 | 53.1 ms | 91.7 ms | 53.1 ms | 17.4 img/s |
+| **API End-to-End** | 1 | 67.8 ms | 102.0 ms | 67.8 ms | 14.7 req/s |
+| **Vectorized Batch** | 4 | 50.8 ms | 68.2 ms | 12.7 ms | 71.0 img/s |
+| **Vectorized Batch** | 8 | 50.2 ms | 75.3 ms | 6.3 ms | 148.8 img/s |
+| **Vectorized Batch** | 16 | 57.4 ms | 88.5 ms | **3.6 ms** | **275.8 img/s** |
+
+*Note: Vectorized batch inference provides a **~15.8x throughput acceleration** over sequential single-image inference.*
 
 ---
 
-## Architecture Flow
+## Model Reliability & Calibration
 
-```mermaid
-flowchart TD
-    A[Fashion-MNIST] --> B[54k Train / 6k Val / 10k Test]
-    B --> C[Scratch CNN Experiments]
-    C --> D[Validation Macro-F1 Selection]
-    D --> E[Single Test Set Evaluation]
-    E --> F[artifacts/best_model.keras]
-    F --> G[FastAPI Service]
-    G --> H[Upload Validation & Auto-Inversion]
-    G --> I[Interactive Web Playground]
-```
+Detailed analysis provided in [`reports/model_reliability.md`](reports/model_reliability.md):
+
+### Statistical Calibration (Test Set, N = 10,000)
+
+| Metric | Score | Practical Significance |
+| :--- | :---: | :--- |
+| **Expected Calibration Error (ECE)** | **0.0196** | Gap between predicted confidence and true empirical accuracy is $< 2.0\%$. |
+| **Maximum Calibration Error (MCE)** | **0.2615** | Peak calibration disparity occurring in low-sample intermediate bins. |
+| **Brier Score** | **0.1199** | Mean squared probability error (0.0 represents perfect calibration). |
+| **Mean Confidence** | **93.48%** | Average certainty over the test set (aligned with 91.52% empirical accuracy). |
+
+![Calibration Curve](reports/calibration_curve.png)
+
+### Auto-Inversion Risk Analysis
+
+- **Detection Rate on White Backgrounds**: 99.98%
+- **False Inversion Rate on Dark Backgrounds**: 0.02%
+- **Edge-Case Warnings**:
+  - Garments touching all 4 image borders may have their fabric confused for light background.
+  - Mitigated via `auto_invert=false` parameter and UI toggle.
+
+---
+
+## Features
+
+- **Scratch CNNs**: 3 architectures trained from random initialization (`baseline`, `balanced`, `regularized`) — no pretrained weights.
+- **Grad-CAM Visual Saliency**: `/explain` generates activation heatmaps highlighting which garment regions drove the classification.
+- **Hardened Vectorized Batch API**:
+  - `POST /predict/batch`: Processes up to 16 images in a single vectorized pass.
+  - **Payload limits**: Enforces 5 MB per file and 20 MB total batch payload (returns HTTP 413).
+  - **Per-file diagnostics**: Reports individual file errors (corrupt, empty, unsupported MIME) rather than silently dropping uploads.
+- **Production Preprocessing Engine**:
+  - **Alpha-channel safety**: Automatic compositing of transparent PNGs over white.
+  - **Auto-inversion**: Dynamically detects light backgrounds and inverts them to match Fashion-MNIST distribution.
+- **FastAPI Service**:
+  - `GET /health` & `GET /ready`: Container liveness/readiness probes (returns HTTP 503 if model is missing).
+  - `GET /model-info`: Live metadata, parameters, and input contract.
+  - `GET /demo`: Dark-mode interactive web dashboard with drawing canvas, Grad-CAM viewer, and probability distribution.
+- **Test Suite**: 19 unit, contract, and integration tests via `pytest`.
+- **Docker Verified**: Multi-stage Dockerfile with integrated `HEALTHCHECK` and automated CI startup validation.
 
 ---
 
@@ -75,7 +105,7 @@ flowchart TD
 ### 1. Environment Setup
 
 ```powershell
-# Using uv (fastest):
+# Using uv (recommended, fastest):
 uv venv --python 3.11
 uv pip install -r requirements.txt
 
@@ -88,24 +118,22 @@ pip install -r requirements.txt
 ### 2. Run Tests
 
 ```powershell
-.\.venv\Scripts\pytest -v
+.\run.ps1 test
+# Or: .\.venv\Scripts\pytest -v
 ```
 
-All 14 tests covering preprocessing edge cases, output dimensions, probability distribution constraints, and API contracts will pass.
+All 19 tests pass:
+- Preprocessing constraints, invalid inputs (NaNs, shapes, bounds)
+- Health and readiness states with/without model
+- API contracts for `/predict`, `/explain`, and `/predict/batch`
+- Hardened batch error reporting and limit enforcement
+- Live artifact inference and Grad-CAM generation
 
-### 3. Run Experiments / Train
+### 3. Run Performance Benchmark
 
 ```powershell
-.\.venv\Scripts\python -m scripts.train --epochs 8 --batch-size 128
+.\.venv\Scripts\python -m scripts.benchmark
 ```
-
-Outputs generated:
-
-- `artifacts/best_model.keras`
-- `reports/confusion_matrix.png`
-- `reports/classification_report.json`
-- `reports/experiment_summary.json`
-- `reports/<variant>/learning_curves.png`
 
 ---
 
@@ -114,7 +142,8 @@ Outputs generated:
 Start the server:
 
 ```powershell
-.\.venv\Scripts\uvicorn app.main:app --reload --port 8000
+.\run.ps1 serve
+# Or: .\.venv\Scripts\uvicorn app.main:app --reload --port 8000
 ```
 
 Open:
@@ -124,71 +153,77 @@ Open:
 - **Health Check**: `http://localhost:8000/health`
 - **Model Info**: `http://localhost:8000/model-info`
 
-### Example CLI Prediction using Provided Samples
+### Example CLI Requests
 
-Test using the pre-extracted sample images in `samples/`:
+Test using sample images in `samples/`:
 
 ```powershell
-# Dark background sample:
+# Single image prediction:
 curl.exe -X POST "http://localhost:8000/predict" -F "file=@samples/sneaker_dark_bg.png"
 
-# Light background sample (auto-inversion verified):
-curl.exe -X POST "http://localhost:8000/predict" -F "file=@samples/sneaker_light_bg.png"
-```
+# Grad-CAM Visual Explainability:
+curl.exe -X POST "http://localhost:8000/explain" -F "file=@samples/sneaker_light_bg.png"
 
-Sample JSON response:
-
-```json
-{
-  "predicted_class": "Sneaker",
-  "confidence": 0.9841,
-  "top_predictions": [
-    {"class_name": "Sneaker", "probability": 0.9841},
-    {"class_name": "Ankle boot", "probability": 0.0125},
-    {"class_name": "Sandal", "probability": 0.0028}
-  ],
-  "probabilities": { ... },
-  "inverted_background": true
-}
+# Hardened Batch Prediction:
+curl.exe -X POST "http://localhost:8000/predict/batch" \
+  -F "files=@samples/sneaker_dark_bg.png" \
+  -F "files=@samples/trouser_light_bg.png"
 ```
 
 ---
 
-## Docker Deployment
+## Docker Deployment & Verification
 
-Build and run using Docker Compose:
+Build and run using Docker:
 
 ```powershell
 docker compose up --build
 ```
+
+Verify container readiness:
+
+```powershell
+curl.exe http://localhost:8000/health
+curl.exe http://localhost:8000/ready
+```
+
+Both endpoints return HTTP 200 with the model loaded and operational. The GitHub Actions CI pipeline also runs this verification on every push.
 
 ---
 
 ## Repository Structure
 
 ```text
+├── .github/workflows/ci.yml     # Automated CI & Docker verification
 ├── app/
-│   ├── main.py          # FastAPI application, middleware, endpoints
-│   ├── model.py         # Model architecture & image preprocessing
-│   ├── schemas.py       # Pydantic request/response schemas
-│   └── templates/       # Interactive Web UI (index.html)
+│   ├── main.py                  # FastAPI application, middleware, endpoints
+│   ├── model.py                 # Architecture, preprocessing, Grad-CAM
+│   ├── schemas.py               # Pydantic request/response schemas
+│   └── templates/index.html     # Interactive Web UI with Grad-CAM viewer
 ├── artifacts/
-│   └── best_model.keras # Winning trained CNN model
+│   └── best_model.keras         # Winning trained CNN model
 ├── reports/
-│   ├── confusion_matrix.png
-│   ├── classification_report.json
-│   ├── experiment_summary.json
-│   └── regularized/learning_curves.png
-├── samples/             # Ready-to-test clothing sample images
+│   ├── benchmark_summary.json   # Latency & throughput benchmarks
+│   ├── classification_report.json # Per-class precision, recall, F1
+│   ├── confusion_matrix.png     # Test set confusion matrix
+│   ├── calibration_curve.png    # Reliability diagram & confidence histogram
+│   ├── model_reliability.md     # ECE & background inversion analysis
+│   └── regularized/             # Learning curves
+├── samples/                     # 16 clean test images (dark & light bg)
 ├── scripts/
-│   ├── train.py         # End-to-end benchmark & evaluation pipeline
-│   └── extract_samples.py
+│   ├── benchmark.py             # Latency, throughput, and percentile benchmark
+│   ├── extract_samples.py       # Sample extraction utility
+│   ├── reliability_analysis.py  # ECE calibration & boundary evaluation
+│   └── train.py                 # Multi-variant training & evaluation
 ├── tests/
-│   ├── test_api.py      # FastAPI contract and validation tests
-│   └── test_model.py    # CNN shape, probability, & preprocessing tests
-├── Dockerfile
+│   ├── test_api.py              # API contract, batch, and explainability tests
+│   └── test_model.py            # CNN shape, probability, & preprocessing tests
+├── Dockerfile                   # Production container with HEALTHCHECK
 ├── docker-compose.yml
-└── requirements.txt
+├── Makefile                     # Cross-platform task runner
+├── pyproject.toml               # Project metadata & tool config
+├── requirements.txt             # Pinned dependencies
+└── run.ps1                      # Windows PowerShell task runner
 ```
 
 ---

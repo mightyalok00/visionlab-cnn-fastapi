@@ -101,9 +101,46 @@ def test_batch_prediction():
         )
     assert response.status_code == 200
     data = response.json()
-    assert data["total_processed"] == 2
+    assert data["total_images"] == 2
+    assert data["successful"] == 2
+    assert data["failed"] == 0
     assert len(data["predictions"]) == 2
+    assert data["predictions"][0]["status"] == "success"
     assert data["predictions"][0]["predicted_class"] == "Dress"
+
+
+def test_batch_prediction_reports_per_file_errors():
+    with TestClient(app) as client:
+        client.app.state.model = FakeModel()
+        response = client.post(
+            "/predict/batch",
+            files=[
+                ("files", ("valid.png", png_bytes(), "image/png")),
+                ("files", ("empty.png", b"", "image/png")),
+                ("files", ("bad.txt", b"plain text", "text/plain")),
+                ("files", ("corrupt.png", b"corrupt bytes", "image/png")),
+            ],
+        )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_images"] == 4
+    assert data["successful"] == 1
+    assert data["failed"] == 3
+    assert data["predictions"][0]["status"] == "success"
+    assert data["predictions"][1]["status"] == "error"
+    assert "empty" in data["predictions"][1]["error"].lower()
+    assert data["predictions"][2]["status"] == "error"
+    assert "content type" in data["predictions"][2]["error"].lower()
+    assert data["predictions"][3]["status"] == "error"
+
+
+def test_batch_prediction_rejects_too_many_files():
+    with TestClient(app) as client:
+        client.app.state.model = FakeModel()
+        files = [("files", (f"img_{i}.png", png_bytes(), "image/png")) for i in range(17)]
+        response = client.post("/predict/batch", files=files)
+    assert response.status_code == 400
+    assert "Maximum batch size" in response.json()["detail"]
 
 
 def test_real_model_inference_and_explainability():
