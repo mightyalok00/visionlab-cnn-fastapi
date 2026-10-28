@@ -126,12 +126,48 @@ def predict_array(model: Any, image: np.ndarray, was_inverted: bool = False) -> 
 
 
 def load_keras_model(path: str | Path) -> Any:
+    from pathlib import Path
+
     from tensorflow import keras
 
     model_path = Path(path)
     if not model_path.is_file():
         raise FileNotFoundError(f"Model artifact does not exist: {model_path}")
-    return keras.models.load_model(model_path)
+
+    try:
+        return keras.models.load_model(model_path)
+    except Exception as exc:
+        # Cross-platform fallback for Keras 2.15 files saved on Windows with backslashes
+        if str(model_path).endswith(".keras"):
+            import io
+            import tempfile
+            import zipfile
+
+            import h5py
+
+            with zipfile.ZipFile(model_path, "r") as z_in:
+                config_bytes = z_in.read("config.json")
+                meta_bytes = z_in.read("metadata.json")
+                h5_bytes = z_in.read("model.weights.h5")
+
+            new_h5_buf = io.BytesIO()
+            with h5py.File(io.BytesIO(h5_bytes), "r") as f_in, h5py.File(new_h5_buf, "w") as f_out:
+                for key in f_in.keys():
+                    norm_key = key.replace("\\", "/")
+                    f_in.copy(key, f_out, name=norm_key)
+
+            with tempfile.NamedTemporaryFile(suffix=".keras", delete=False) as tmp:
+                with zipfile.ZipFile(tmp.name, "w") as z_out:
+                    z_out.writestr("config.json", config_bytes)
+                    z_out.writestr("metadata.json", meta_bytes)
+                    z_out.writestr("model.weights.h5", new_h5_buf.getvalue())
+                tmp_path = tmp.name
+
+            try:
+                return keras.models.load_model(tmp_path)
+            finally:
+                Path(tmp_path).unlink(missing_ok=True)
+        raise exc
 
 
 def generate_gradcam_overlay(

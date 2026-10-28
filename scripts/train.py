@@ -64,6 +64,30 @@ def plot_confusion_matrix(cm: np.ndarray, class_names: list[str], output_path: P
     plt.close(fig)
 
 
+def _normalize_keras_archive(keras_path: Path) -> None:
+    """Ensures HDF5 internal keys inside .keras zip use forward slashes for cross-platform compatibility."""
+    import io
+    import zipfile
+
+    import h5py
+
+    with zipfile.ZipFile(keras_path, "r") as z_in:
+        config_bytes = z_in.read("config.json")
+        meta_bytes = z_in.read("metadata.json")
+        h5_bytes = z_in.read("model.weights.h5")
+
+    new_h5_buf = io.BytesIO()
+    with h5py.File(io.BytesIO(h5_bytes), "r") as f_in, h5py.File(new_h5_buf, "w") as f_out:
+        for key in f_in.keys():
+            norm_key = key.replace("\\", "/")
+            f_in.copy(key, f_out, name=norm_key)
+
+    with zipfile.ZipFile(keras_path, "w") as z_out:
+        z_out.writestr("config.json", config_bytes)
+        z_out.writestr("metadata.json", meta_bytes)
+        z_out.writestr("model.weights.h5", new_h5_buf.getvalue())
+
+
 def main() -> None:
     args = parse_args()
     if args.epochs < 1 or args.batch_size < 1:
@@ -151,7 +175,9 @@ def main() -> None:
     selected = max(results, key=lambda item: item["validation_macro_f1"])
     selected_model_path = ROOT / selected["model_path"]
     selected_model = keras.models.load_model(selected_model_path)
-    selected_model.save(ARTIFACTS / "best_model.keras")
+    best_model_path = ARTIFACTS / "best_model.keras"
+    selected_model.save(best_model_path)
+    _normalize_keras_archive(best_model_path)
 
     test_probabilities = selected_model.predict(
         x_test, batch_size=args.batch_size, verbose=0
