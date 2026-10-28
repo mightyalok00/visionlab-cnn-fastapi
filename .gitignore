@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .pytest_cache/
 .coverage
+*.egg-info/
 
 # Generated model and evaluation artifacts
 artifacts/*.keras

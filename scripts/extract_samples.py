@@ -1,7 +1,10 @@
 from pathlib import Path
+
 from PIL import Image
 from tensorflow import keras
+
 from app.model import CLASS_NAMES
+
 
 def main():
     (_, _), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()

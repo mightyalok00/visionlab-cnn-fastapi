@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 
 import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
@@ -15,6 +14,8 @@ from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from tensorflow import keras
 
 from app.model import CLASS_NAMES, build_model
+
+matplotlib.use("Agg")
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / "artifacts"

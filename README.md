@@ -31,10 +31,8 @@ Trained under fixed random seed (`seed=42`) with 54,000 training, 6,000 validati
 
 ### Evaluation Visualizations
 
-<p align="center">
-  <img src="reports/confusion_matrix.png" alt="Fashion-MNIST Confusion Matrix" width="450"/>
-  <img src="reports/regularized/learning_curves.png" alt="Learning Curves" width="450"/>
-</p>
+![Fashion-MNIST Confusion Matrix](reports/confusion_matrix.png)
+![Learning Curves](reports/regularized/learning_curves.png)
 
 ---
 
@@ -102,6 +100,7 @@ All 14 tests covering preprocessing edge cases, output dimensions, probability d
 ```
 
 Outputs generated:
+
 - `artifacts/best_model.keras`
 - `reports/confusion_matrix.png`
 - `reports/classification_report.json`
@@ -119,6 +118,7 @@ Start the server:
 ```
 
 Open:
+
 - **Interactive Playground**: `http://localhost:8000/demo` (or `http://localhost:8000/`)
 - **Interactive Swagger Docs**: `http://localhost:8000/docs`
 - **Health Check**: `http://localhost:8000/health`
@@ -137,6 +137,7 @@ curl.exe -X POST "http://localhost:8000/predict" -F "file=@samples/sneaker_light
 ```
 
 Sample JSON response:
+
 ```json
 {
   "predicted_class": "Sneaker",

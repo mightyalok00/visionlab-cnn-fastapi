@@ -1,6 +1,8 @@
 import io
+from pathlib import Path
 
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -105,8 +107,6 @@ def test_batch_prediction():
 
 
 def test_real_model_inference_and_explainability():
-    from pathlib import Path
-    import pytest
     from app.model import load_keras_model
 
     model_path = Path("artifacts/best_model.keras")

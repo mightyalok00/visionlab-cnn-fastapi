@@ -8,11 +8,14 @@ version = "2.0.0"
 description = "Fashion-MNIST classification using scratch CNNs and a production FastAPI service"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "VisionLab Team" }
 ]
 keywords = ["fastapi", "tensorflow", "cnn", "fashion-mnist", "computer-vision"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

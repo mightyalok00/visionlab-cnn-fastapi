@@ -144,7 +144,8 @@ def generate_gradcam_overlay(
     base64-encoded PNG strings for the preprocessed image and colored overlay.
     """
     import base64
-    import matplotlib.cm as cm
+
+    import matplotlib
     import tensorflow as tf
     from tensorflow import keras
 
@@ -175,7 +176,6 @@ def generate_gradcam_overlay(
     preprocessed_base64 = f"data:image/png;base64,{base64.b64encode(input_buf.getvalue()).decode('utf-8')}"
 
     # Upscale heatmap and apply colormap
-    import matplotlib
     colormap = matplotlib.colormaps["jet"]
     colored_heatmap = colormap(heatmap_np)[:, :, :3]
     heatmap_img = Image.fromarray(np.uint8(255 * colored_heatmap)).resize((140, 140), Image.Resampling.BILINEAR)
