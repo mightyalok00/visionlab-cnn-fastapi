@@ -123,6 +123,7 @@ pip install -r requirements.txt
 ```
 
 All 19 tests pass:
+
 - Preprocessing constraints, invalid inputs (NaNs, shapes, bounds)
 - Health and readiness states with/without model
 - API contracts for `/predict`, `/explain`, and `/predict/batch`
