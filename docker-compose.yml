@@ -1,0 +1,9 @@
+services:
+  visionlab-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      VISIONLAB_MODEL_PATH: /app/artifacts/best_model.keras
+      LOG_LEVEL: INFO
+    restart: unless-stopped

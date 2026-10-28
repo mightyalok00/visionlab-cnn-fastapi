@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+
+# Generated model and evaluation artifacts
+artifacts/*.keras
+artifacts/*.h5
+!artifacts/best_model.keras
+reports/confusion_matrix.npy
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

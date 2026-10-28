@@ -1,0 +1,50 @@
+{
+  "seed": 42,
+  "dataset": "Fashion-MNIST",
+  "train_examples": 54000,
+  "validation_examples": 6000,
+  "test_examples": 10000,
+  "selection_metric": "validation_macro_f1",
+  "selected_variant": "regularized",
+  "experiments": [
+    {
+      "variant": "baseline",
+      "epochs_completed": 8,
+      "training_seconds": 22.505,
+      "validation_loss": 0.22211451828479767,
+      "validation_accuracy": 0.9171666502952576,
+      "validation_macro_f1": 0.9167941419326624,
+      "parameter_count": 206922,
+      "model_path": "artifacts\\baseline.keras"
+    },
+    {
+      "variant": "balanced",
+      "epochs_completed": 8,
+      "training_seconds": 45.705,
+      "validation_loss": 0.20906135439872742,
+      "validation_accuracy": 0.9206666946411133,
+      "validation_macro_f1": 0.9198937816150264,
+      "parameter_count": 421642,
+      "model_path": "artifacts\\balanced.keras"
+    },
+    {
+      "variant": "regularized",
+      "epochs_completed": 8,
+      "training_seconds": 63.681,
+      "validation_loss": 0.21765118837356567,
+      "validation_accuracy": 0.9201666712760925,
+      "validation_macro_f1": 0.9206484266065056,
+      "parameter_count": 422026,
+      "model_path": "artifacts\\regularized.keras"
+    }
+  ],
+  "final_test_evaluation": {
+    "test_loss": 0.23233552277088165,
+    "test_accuracy": 0.9151999950408936,
+    "macro_f1": 0.9153907222814903,
+    "weighted_f1": 0.9153907222814902,
+    "classification_report": "classification_report.json",
+    "confusion_matrix": "confusion_matrix.npy"
+  },
+  "note": "Variants are selected using validation macro-F1. The test set is evaluated only once for the selected model."
+}

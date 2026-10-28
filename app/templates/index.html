@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VisionLab 2.0 — Fashion-MNIST CNN Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.12) 0px, transparent 50%);
+      color: var(--text-main);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    header {
+      border-bottom: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(11, 15, 25, 0.8);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--mono);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-family: var(--mono);
+    }
+
+    .status-ready {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-degraded {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #ffffff 40%, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto;
+      font-size: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .dropzone {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 1.25rem;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .dropzone-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .dropzone-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .dropzone-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .sample-section {
+      margin-top: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .sample-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .chip:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 1.25rem;
+    }
+
+    .toggle-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .toggle-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    .btn-predict {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      width: 100%;
+    }
+
+    .btn-predict:hover:not(:disabled) {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    .btn-predict:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Result Panel */
+    .preview-container {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--card-border);
+    }
+
+    .preview-box {
+      text-align: center;
+    }
+
+    .preview-img {
+      width: 84px;
+      height: 84px;
+      object-fit: contain;
+      background: #000;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      image-rendering: pixelated;
+    }
+
+    .preview-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      font-family: var(--mono);
+    }
+
+    .prediction-highlight {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15));
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pred-class {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .pred-confidence {
+      font-size: 1.75rem;
+      font-weight: 800;
+      font-family: var(--mono);
+      color: var(--accent);
+    }
+
+    .bars-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .bar-item {
+      display: grid;
+      grid-template-columns: 110px 1fr 50px;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .bar-name {
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bar-track {
+      background: rgba(255, 255, 255, 0.06);
+      height: 8px;
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 9999px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .bar-item.top .bar-fill {
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+    }
+
+    .bar-pct {
+      text-align: right;
+      font-family: var(--mono);
+      color: var(--text-main);
+    }
+
+    .empty-state {
+      padding: 3.5rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      opacity: 0.3;
+      margin-bottom: 0.75rem;
+    }
+
+    .alert {
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <div class="logo-badge">V</div>
+        <div>
+          <div class="brand-title">VisionLab 2.0</div>
+          <div class="brand-subtitle">Fashion-MNIST CNN Inference</div>
+        </div>
+      </a>
+      <div class="nav-links">
+        <div id="statusBadge" class="status-badge status-degraded">
+          <span class="status-dot"></span>
+          <span id="statusText">Checking...</span>
+        </div>
+        <a href="/docs" class="nav-link" target="_blank">API Docs</a>
+        <a href="/model-info" class="nav-link" target="_blank">Model Info</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Classify Fashion from Scratch</h1>
+      <p>Test real images against custom Convolutional Neural Networks trained on Fashion-MNIST with upload auto-inversion and confidence analysis.</p>
+    </div>
+
+    <div class="grid">
+      <!-- Input Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>📤</span> Upload or Select Image
+        </div>
+
+        <div id="dropzone" class="dropzone">
+          <div class="dropzone-icon">🖼️</div>
+          <div class="dropzone-text">Click or drag & drop an image</div>
+          <div class="dropzone-sub">Supports PNG, JPEG, WebP (max 5 MB)</div>
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" style="display: none;">
+        </div>
+
+        <div class="sample-section">
+          <div class="section-label">Quick Test Samples:</div>
+          <div class="sample-chips">
+            <button class="chip" data-sample="tshirt">👕 T-shirt</button>
+            <button class="chip" data-sample="trouser">👖 Trouser</button>
+            <button class="chip" data-sample="pullover">🧥 Pullover</button>
+            <button class="chip" data-sample="dress">👗 Dress</button>
+            <button class="chip" data-sample="sneaker">👟 Sneaker</button>
+            <button class="chip" data-sample="bag">👜 Bag</button>
+            <button class="chip" data-sample="boot">🥾 Boot</button>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Auto-Invert Light Backgrounds</div>
+            <div class="toggle-sub">Aligns phone/web photos with Fashion-MNIST (dark bg)</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="autoInvert" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div id="alertBox" class="alert alert-error"></div>
+
+        <button id="predictBtn" class="btn-predict" disabled>Run Inference</button>
+      </div>
+
+      <!-- Result Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>🎯</span> Prediction Results
+        </div>
+
+        <div id="emptyResult" class="empty-state">
+          <div class="empty-icon">📊</div>
+          <div>Upload an image or pick a sample on the left to see CNN inference results.</div>
+        </div>
+
+        <div id="resultContent" style="display: none;">
+          <div class="preview-container">
+            <div class="preview-box">
+              <img id="origPreview" class="preview-img" alt="Input Preview">
+              <div class="preview-label">Uploaded</div>
+            </div>
+            <div style="font-size: 1.25rem; color: var(--text-muted);">➔</div>
+            <div class="preview-box">
+              <canvas id="processedCanvas" class="preview-img" width="28" height="28"></canvas>
+              <div class="preview-label">28×28 Grayscale</div>
+            </div>
+            <div style="font-size: 1.25rem; color: var(--text-muted);">➔</div>
+            <div class="preview-box">
+              <img id="gradcamPreview" class="preview-img" style="display: none;" alt="Grad-CAM Attention">
+              <div id="gradcamPlaceholder" class="preview-img" style="display: grid; place-items: center; background: rgba(255,255,255,0.03); font-size: 0.65rem; color: var(--text-muted); text-align: center; padding: 2px;">Attention Map</div>
+              <div class="preview-label">Grad-CAM Heatmap</div>
+            </div>
+            <div style="flex: 1; font-size: 0.8rem; color: var(--text-muted); min-width: 140px;">
+              <div>Shape: <strong style="color:var(--text-main);">28×28×1</strong></div>
+              <div>Resampling: <strong style="color:var(--text-main);">Lanczos</strong></div>
+              <div id="inversionNotice" style="color: var(--accent); margin-top: 0.25rem; font-weight: 500;"></div>
+            </div>
+          </div>
+
+          <div class="prediction-highlight">
+            <div>
+              <div class="section-label" style="margin-bottom: 0.2rem;">Top Prediction</div>
+              <div id="topClassName" class="pred-class">—</div>
+            </div>
+            <div style="text-align: right;">
+              <div class="section-label" style="margin-bottom: 0.2rem;">Confidence</div>
+              <div id="topConfidence" class="pred-confidence">0.0%</div>
+            </div>
+          </div>
+
+          <div class="section-label">Class Probability Distribution</div>
+          <div id="barsContainer" class="bars-container"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    VisionLab 2.0 — Fashion-MNIST CNN Inference Service • FastAPI & TensorFlow
+  </footer>
+
+  <script>
+    const CLASSES = [
+      "T-shirt/top", "Trouser", "Pullover", "Dress", "Coat",
+      "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"
+    ];
+
+    let currentFile = null;
+
+    // Check health on load
+    async function checkHealth() {
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        if (data.status === 'ok') {
+          badge.className = 'status-badge status-ready';
+          text.textContent = 'Model Ready';
+        } else {
+          badge.className = 'status-badge status-degraded';
+          text.textContent = data.model_error ? 'Model Error' : 'No Model Loaded';
+        }
+      } catch (e) {
+        badge.className = 'status-badge status-degraded';
+        text.textContent = 'Offline';
+      }
+    }
+    checkHealth();
+
+    // Elements
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const predictBtn = document.getElementById('predictBtn');
+    const autoInvert = document.getElementById('autoInvert');
+    const alertBox = document.getElementById('alertBox');
+    const emptyResult = document.getElementById('emptyResult');
+    const resultContent = document.getElementById('resultContent');
+    const origPreview = document.getElementById('origPreview');
+    const processedCanvas = document.getElementById('processedCanvas');
+    const gradcamPreview = document.getElementById('gradcamPreview');
+    const gradcamPlaceholder = document.getElementById('gradcamPlaceholder');
+    const inversionNotice = document.getElementById('inversionNotice');
+    const topClassName = document.getElementById('topClassName');
+    const topConfidence = document.getElementById('topConfidence');
+    const barsContainer = document.getElementById('barsContainer');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function showAlert(msg) {
+      alertBox.textContent = msg;
+      alertBox.style.display = 'block';
+    }
+
+    function hideAlert() {
+      alertBox.style.display = 'none';
+    }
+
+    function handleFileSelect(file) {
+      hideAlert();
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+        showAlert('Please choose a PNG, JPEG, or WebP image file.');
+        return;
+      }
+      currentFile = file;
+      predictBtn.disabled = false;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        origPreview.src = e.target.result;
+        origPreview.onload = () => renderLocal28Preview(origPreview);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderLocal28Preview(imgElement) {
+      const ctx = processedCanvas.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(imgElement, 0, 0, 28, 28);
+      const imgData = ctx.getImageData(0, 0, 28, 28);
+      const d = imgData.data;
+
+      // Calculate border average
+      let borderSum = 0;
+      let borderCount = 0;
+      for (let y = 0; y < 28; y++) {
+        for (let x = 0; x < 28; x++) {
+          const idx = (y * 28 + x) * 4;
+          const gray = (d[idx] + d[idx+1] + d[idx+2]) / 3;
+          if (y < 2 || y >= 26 || x < 2 || x >= 26) {
+            borderSum += gray;
+            borderCount++;
+          }
+        }
+      }
+      const borderAvg = borderSum / borderCount;
+      const shouldInvert = autoInvert.checked && borderAvg > 127.5;
+
+      for (let i = 0; i < d.length; i += 4) {
+        let gray = (d[i] + d[i+1] + d[i+2]) / 3;
+        if (shouldInvert) gray = 255 - gray;
+        d[i] = gray;
+        d[i+1] = gray;
+        d[i+2] = gray;
+        d[i+3] = 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // Quick synthetic samples generator
+    document.querySelectorAll('[data-sample]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-sample');
+        generateSampleCanvas(type);
+      });
+    });
+
+    function generateSampleCanvas(type) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 120;
+      canvas.height = 120;
+      const ctx = canvas.getContext('2d');
+      // Black background for Fashion-MNIST
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 120, 120);
+      ctx.fillStyle = '#ffffff';
+
+      if (type === 'tshirt') {
+        // Draw T-shirt
+        ctx.beginPath();
+        ctx.moveTo(35, 25);
+        ctx.lineTo(85, 25);
+        ctx.lineTo(110, 45);
+        ctx.lineTo(95, 60);
+        ctx.lineTo(85, 52);
+        ctx.lineTo(85, 105);
+        ctx.lineTo(35, 105);
+        ctx.lineTo(35, 52);
+        ctx.lineTo(25, 60);
+        ctx.lineTo(10, 45);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'trouser') {
+        // Draw Trouser
+        ctx.beginPath();
+        ctx.moveTo(35, 15);
+        ctx.lineTo(85, 15);
+        ctx.lineTo(80, 105);
+        ctx.lineTo(63, 105);
+        ctx.lineTo(60, 45);
+        ctx.lineTo(57, 105);
+        ctx.lineTo(40, 105);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'sneaker') {
+        // Draw Sneaker
+        ctx.beginPath();
+        ctx.ellipse(60, 80, 45, 16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(40, 50, 40, 30);
+      } else if (type === 'bag') {
+        // Draw Bag
+        ctx.fillRect(30, 45, 60, 55);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(60, 45, 18, Math.PI, 0);
+        ctx.stroke();
+      } else if (type === 'boot') {
+        // Draw Ankle boot
+        ctx.beginPath();
+        ctx.moveTo(40, 20);
+        ctx.lineTo(70, 20);
+        ctx.lineTo(70, 65);
+        ctx.lineTo(100, 85);
+        ctx.lineTo(95, 95);
+        ctx.lineTo(30, 95);
+        ctx.lineTo(40, 65);
+        ctx.closePath();
+        ctx.fill();
+      } else if (type === 'dress') {
+        // Draw Dress
+        ctx.beginPath();
+        ctx.moveTo(48, 20);
+        ctx.lineTo(72, 20);
+        ctx.lineTo(68, 50);
+        ctx.lineTo(95, 105);
+        ctx.lineTo(25, 105);
+        ctx.lineTo(52, 50);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Pullover
+        ctx.fillRect(30, 30, 60, 75);
+        ctx.fillRect(10, 30, 20, 60);
+        ctx.fillRect(90, 30, 20, 60);
+      }
+
+      canvas.toBlob((blob) => {
+        const file = new File([blob], `${type}_sample.png`, { type: 'image/png' });
+        handleFileSelect(file);
+      }, 'image/png');
+    }
+
+    predictBtn.addEventListener('click', async () => {
+      if (!currentFile) return;
+      hideAlert();
+      predictBtn.disabled = true;
+      predictBtn.textContent = 'Running Inference...';
+
+      const formData = new FormData();
+      formData.append('file', currentFile);
+
+      try {
+        const url = `/predict?auto_invert=${autoInvert.checked}`;
+        const explainUrl = `/explain?auto_invert=${autoInvert.checked}`;
+
+        const resPromise = fetch(url, { method: 'POST', body: formData });
+        const explainPromise = fetch(explainUrl, { method: 'POST', body: formData })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null);
+
+        const [res, explainData] = await Promise.all([resPromise, explainPromise]);
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Prediction request failed' }));
+          throw new Error(err.detail || 'Inference failed');
+        }
+
+        const data = await res.json();
+        renderResults(data, explainData);
+      } catch (err) {
+        showAlert(err.message || 'Error communicating with API.');
+      } finally {
+        predictBtn.disabled = false;
+        predictBtn.textContent = 'Run Inference';
+      }
+    });
+
+    function renderResults(data, explainData) {
+      emptyResult.style.display = 'none';
+      resultContent.style.display = 'block';
+
+      topClassName.textContent = data.predicted_class;
+      topConfidence.textContent = (data.confidence * 100).toFixed(1) + '%';
+
+      if (explainData && explainData.gradcam_base64) {
+        gradcamPreview.src = explainData.gradcam_base64;
+        gradcamPreview.style.display = 'block';
+        if (gradcamPlaceholder) gradcamPlaceholder.style.display = 'none';
+      } else {
+        gradcamPreview.style.display = 'none';
+        if (gradcamPlaceholder) gradcamPlaceholder.style.display = 'grid';
+      }
+
+      inversionNotice.textContent = data.inverted_background
+        ? '✦ Background auto-inverted for optimal contrast'
+        : '✦ Standard background contrast preserved';
+
+      barsContainer.innerHTML = '';
+      CLASSES.forEach(cName => {
+        const prob = data.probabilities[cName] || 0;
+        const pct = (prob * 100).toFixed(1);
+        const isTop = (cName === data.predicted_class);
+
+        const row = document.createElement('div');
+        row.className = 'bar-item' + (isTop ? ' top' : '');
+        row.innerHTML = `
+          <div class="bar-name" title="${cName}">${cName}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: ${pct}%"></div>
+          </div>
+          <div class="bar-pct">${pct}%</div>
+        `;
+        barsContainer.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
