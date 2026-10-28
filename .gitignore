@@ -5,6 +5,7 @@ __pycache__/
 venv/
 .pytest_cache/
 .coverage
+.ruff_cache/
 *.egg-info/
 
 # Generated model and evaluation artifacts
